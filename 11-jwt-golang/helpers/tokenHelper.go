@@ -13,7 +13,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"jwt-golang/database"
 	"log"
-	"os"
 	"time"
 )
 
@@ -28,7 +27,7 @@ type SignedDetails struct {
 
 var userCollection *mongo.Collection = database.OpenCollection(database.Client, "user")
 
-var SECRET_KEY string = os.Getenv("SECRET_KEY")
+var SECRET_KEY interface{}
 
 func GenerateAllTokens(email string, firstname string, lastname string,
 	userType string, userId string) (string, string, error) {
@@ -49,6 +48,7 @@ func GenerateAllTokens(email string, firstname string, lastname string,
 		},
 	}
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	SECRET_KEY = key
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -91,7 +91,7 @@ func UpdateAllTokens(token string, refreshToken string, userId string) {
 
 func ValidateToken(clientToken string) (claims *SignedDetails, msg string) {
 	token, err := jwt.ParseWithClaims(clientToken, &SignedDetails{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(SECRET_KEY), nil
+		return SECRET_KEY, nil
 	})
 	if err != nil {
 		msg = err.Error()
